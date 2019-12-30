@@ -22,10 +22,6 @@ class Geometry:
     def Rz_p(self, ang):
         return self.Rz_a(ang).transpose()
 
-    def rotate_axis_angle(self, v_axis, ang, v):
-        v = np.cos(ang) * v + np.sin(ang) * np.cross(v_axis, v) + (1 - np.cos(ang)) * np.cross(v_axis, v) @ v_axis
-        return v
-
     def R_to_axis_angle(self, R):
         ang = np.acos((R[0, 0] + R[1, 1] + R[2, 2] - 1) / 2)
         x = (R[2, 1] - R[1, 2]) / np.sqrt((R[2, 1] - R[1, 2])**2 + (R[0, 2] - R[2, 0])**2 + (R[1, 0] - R[0, 1])**2)
@@ -44,7 +40,7 @@ class Geometry:
     def axis_angle_to_R(self, ax, ang):
         R = np.array([[np.cos(ang) + ax[0]**2 * (1 - np.cos(ang)), ax[0]*ax[1]*(1-np.cos(ang)) - ax[2]*np.sin(ang), ax[0]*ax[2]*(1-np.cos(ang)) + ax[1]*np.sin(ang)], \
                       [ax[0]*ax[1]*(1-np.cos(ang)) + ax[2]*np.sin(ang), np.cos(ang) + ax[1]**2 * (1 - np.cos(ang)), ax[1]*ax[2]*(1-np.cos(ang)) - ax[0]*np.sin(ang)], \
-                      [ax[0]*ax[2]*(1-np.cos(ang)) + ax[1]*np.sin(ang), ax[1]*ax[2]*(1-np.cos(ang)) + ax[0]*np.sin(ang), np.cos(ang) + ax[2]**2 * (1 - np.cos(ang))]])
+                      [ax[0]*ax[2]*(1-np.cos(ang)) - ax[1]*np.sin(ang), ax[1]*ax[2]*(1-np.cos(ang)) + ax[0]*np.sin(ang), np.cos(ang) + ax[2]**2 * (1 - np.cos(ang))]])
         return R
 
     def axis_angle_to_quat(self, ax, ang):
@@ -68,6 +64,16 @@ class Geometry:
         z = q[3] / np.sqrt(1 - q[0] * q[0])
         ax = np.vstack((x, y, z))
         return [ax, ang]
+
+    def rotate_axis_angle(self, v, v_axis, ang):
+        # assumes v and v_axis are column vectors
+        v_rot = v * np.cos(ang) + np.cross(v_axis, v, axis=0) * np.sin(ang) + np.tensordot(v_axis, v) * v_axis * (1 - np.cos(ang))
+        return v_rot
+
+    def rotate_quaternion(self, q, v):
+        v_comb = np.vstack((0, v))
+        v_rot = q.transpose() @ v_comb @ q
+        return v_rot
 
 
 
